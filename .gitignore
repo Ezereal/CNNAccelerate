@@ -1,0 +1,5 @@
+/log/
+/model/
+*.pb
+*.so
+*_time*
