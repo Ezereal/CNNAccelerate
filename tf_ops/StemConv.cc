@@ -9,7 +9,7 @@
  
 #include "time.h"
 #include "matrix.h"
-#include "StemConvLayer_time.h"
+#include "StemConvLayer.h"
 namespace tf = tensorflow;
 using tf::shape_inference::DimensionHandle;
 using tf::shape_inference::InferenceContext;

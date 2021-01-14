@@ -125,8 +125,8 @@ def modify_stem(graph_def):
                 break
 
 def modify_cell(graph_def):
-    input_node = 'child/stem_conv/bn/Identity'
-    output_node = 'child/Mean'
+    input_node = 'fused_stem'
+    output_node = 'child/Relu'
 
     weight_names = init_cell_weights()
     # Create the super Bert node
@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', default='./model/model.pb',  type=str, help='model path')
-    parser.add_argument('--output_path', default='./model.pb',  type=str, help='modify model path')
+    parser.add_argument('--output_path', default='./modify_model.pb',  type=str, help='modify model path')
 
     args = parser.parse_args()
 
