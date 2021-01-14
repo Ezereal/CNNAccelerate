@@ -49,8 +49,6 @@ class StemConvOp : public OpKernel {
         const Tensor& input_tensor = context->input(0);
         float* input = (float*)input_tensor.tensor_data().data();
         
-        Timer timer;
-        timer.start_timer();
         if(!initialized)
         {
             stemconv_layer = new StemConvLayer<tokenSize, hiddenSize, intermediateSize>();
@@ -58,44 +56,22 @@ class StemConvOp : public OpKernel {
             initialized = true;
         }
 
-        std::cout << "init:" << std::endl;
-        timer.end_timer();
-        timer.compute_timer();
-        std::cout << std::endl;
-        timer.start_timer();
-
         //TODO:transpose inputbuffer
         Matrix<float> inputBuffer;
         inputBuffer.Resize(32*32, 3);
         copyInputs(inputBuffer, input, 32, 32);
 
-        std::cout << "input:" << std::endl;
-        timer.end_timer();
-        timer.compute_timer();
-        std::cout << std::endl;
-        timer.start_timer();
         // 执行计算操作。
         Matrix<float> &out = stemconv_layer->forward(inputBuffer); 
 
-        std::cout << "foward:" << std::endl;
-        timer.end_timer();
-        timer.compute_timer();
-        std::cout << std::endl;
-        timer.start_timer();
-
         // 创建输出 tensor, context->allocate_output 用来分配输出内存？
         Tensor* output_tensor = NULL;
-        OP_REQUIRES_OK(context, context->allocate_output(0, TensorShape({32, 32, 108}),
+        OP_REQUIRES_OK(context, context->allocate_output(0, TensorShape({1, 32, 32, 108}),
                                                          &output_tensor));
         float* output = (float*)output_tensor->tensor_data().data();
     
         memcpy(output, out.Data(), 32 * 32 * 108 * sizeof(float));
     
-        std::cout << "output:" << std::endl;
-        timer.end_timer();
-        timer.compute_timer();
-        std::cout << std::endl;
-        timer.start_timer();
     }
 
 private:

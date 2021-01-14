@@ -51,7 +51,7 @@ def create_placeholder(name):
     return node
 
 ################################################################################
-def init_weights():
+def init_stem_weights():
     weight_names = []
     name = 'child/stem_conv/w/read'
     weight_names.append(name)
@@ -61,14 +61,95 @@ def init_weights():
     weight_names.append(name)
     return weight_names
 
+def init_cell_weights():
+    weight_names = []
+    # pool_x
+    weight_names.append('child/layer_0/calibrate/pool_x/w/read')
+    weight_names.append('child/layer_0/calibrate/pool_x/bn/scale/read')
+    weight_names.append('child/layer_0/calibrate/pool_x/bn/offset/read')
+    # poll_y
+    weight_names.append('child/layer_0/calibrate/pool_y/w/read')
+    weight_names.append('child/layer_0/calibrate/pool_y/bn/scale/read')
+    weight_names.append('child/layer_0/calibrate/pool_y/bn/offset/read')
+    # layer_base
+    weight_names.append('child/layer_0/layer_base/w/read')
+    weight_names.append('child/layer_0/layer_base/bn/scale/read')
+    weight_names.append('child/layer_0/layer_base/bn/offset/read')
+    # x_conv sep_conv_0
+    weight_names.append('child/layer_0/cell_0/x_conv/sep_conv_0/w_depth/read')
+    weight_names.append('child/layer_0/cell_0/x_conv/sep_conv_0/w_point/read')
+    weight_names.append('child/layer_0/cell_0/x_conv/sep_conv_0/bn/scale/read')
+    weight_names.append('child/layer_0/cell_0/x_conv/sep_conv_0/bn/offset/read')
+    # x_conv sep_conv_1
+    weight_names.append('child/layer_0/cell_0/x_conv/sep_conv_1/w_depth/read')
+    weight_names.append('child/layer_0/cell_0/x_conv/sep_conv_1/w_point/read')
+    weight_names.append('child/layer_0/cell_0/x_conv/sep_conv_1/bn/scale/read')
+    weight_names.append('child/layer_0/cell_0/x_conv/sep_conv_1/bn/offset/read')
+    # y_conv sep_conv_0
+    weight_names.append('child/layer_0/cell_0/y_conv/sep_conv_0/w_depth/read')
+    weight_names.append('child/layer_0/cell_0/y_conv/sep_conv_0/w_point/read')
+    weight_names.append('child/layer_0/cell_0/y_conv/sep_conv_0/bn/scale/read')
+    weight_names.append('child/layer_0/cell_0/y_conv/sep_conv_0/bn/offset/read')
+    # y_conv sep_conv_1
+    weight_names.append('child/layer_0/cell_0/y_conv/sep_conv_1/w_depth/read')
+    weight_names.append('child/layer_0/cell_0/y_conv/sep_conv_1/w_point/read')
+    weight_names.append('child/layer_0/cell_0/y_conv/sep_conv_1/bn/scale/read')
+    weight_names.append('child/layer_0/cell_0/y_conv/sep_conv_1/bn/offset/read')
+    # final_combine
+    weight_names.append('child/layer_0/final_combine/calibrate_0/path1_conv/w/read')
+    weight_names.append('child/layer_0/final_combine/calibrate_0/path2_conv/w/read')
+    weight_names.append('child/layer_0/final_combine/calibrate_0/bn/scale/read')
+    weight_names.append('child/layer_0/final_combine/calibrate_0/bn/offset/read')
+    return weight_names
+
+
+def modify_stem(graph_def):
+    input_node = 'images_train'
+    output_node = 'child/stem_conv/bn/Identity'
+
+    weight_names = init_stem_weights()
+    # Create the super Bert node
+    input_nodes = [input_node]
+    input_nodes.extend(weight_names)
+    modify_node = create_node('StemConv', 'fused_stem', input_nodes)
+    #set_attr_dtype(bert_node, "T", tf.int32) # hard code, may need to change
+    graph_def.node.extend([modify_node])
+
+    for node in graph_def.node:
+        if not node.input:
+            continue
+        for i in range(len(node.input)):
+            if str(node.input[i]) == output_node:
+                node.input[i] = modify_node.name
+                print('**** Modified the input node of %s' % node.name)
+                break
+
+def modify_cell(graph_def):
+    input_node = 'child/stem_conv/bn/Identity'
+    output_node = 'child/Mean'
+
+    weight_names = init_cell_weights()
+    # Create the super Bert node
+    input_nodes = [input_node]
+    input_nodes.extend(weight_names)
+    modify_node = create_node('Cell', 'fused_cell', input_nodes)
+    #set_attr_dtype(bert_node, "T", tf.int32) # hard code, may need to change
+    graph_def.node.extend([modify_node])
+
+    for node in graph_def.node:
+        if not node.input:
+            continue
+        for i in range(len(node.input)):
+            if str(node.input[i]) == output_node:
+                node.input[i] = modify_node.name
+                print('**** Modified the input node of %s' % node.name)
+                break
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', default='./model/model.pb',  type=str, help='model path')
     parser.add_argument('--output_path', default='./model.pb',  type=str, help='modify model path')
-    parser.add_argument('--input_node', default='images_train', type=str, help='input node name')
-    parser.add_argument('--output_node', default='child/stem_conv/bn/Identity', type=str, help='output node name')
 
     args = parser.parse_args()
 
@@ -79,28 +160,12 @@ if __name__ == '__main__':
     with tf.gfile.GFile(pb_file, "rb") as g:
         graph_def.ParseFromString(g.read())
 
-    input_node = args.input_node
-    output_node = args.output_node
+    modify_stem(graph_def)
+    modify_cell(graph_def)
 
-    weight_names = init_weights()
-    # Create the super Bert node
-    input_nodes = [input_node]
-    input_nodes.extend(weight_names)
-    modify_node = create_node('StemConv', 'fused_stem', input_nodes)
-    #set_attr_dtype(bert_node, "T", tf.int32) # hard code, may need to change
-    graph_def.node.extend([modify_node])
 
-for node in graph_def.node:
-    if not node.input:
-        continue
-    for i in range(len(node.input)):
-        if str(node.input[i]) == output_node:
-            node.input[i] = modify_node.name
-            print('**** Modified the input node of %s' % node.name)
-            break
-
-with tf.Session() as sess:
-    #converted_graph_def = tf.graph_util.convert_variables_to_constants(sess, graph_def, ['loss/Softmax'])
-    converted_graph_def = graph_def
-    tf.train.write_graph(converted_graph_def, './', new_pb_file, as_text=False)
+    with tf.Session() as sess:
+        #converted_graph_def = tf.graph_util.convert_variables_to_constants(sess, graph_def, ['loss/Softmax'])
+        converted_graph_def = graph_def
+        tf.train.write_graph(converted_graph_def, './', new_pb_file, as_text=False)
 

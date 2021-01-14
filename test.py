@@ -8,8 +8,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', default='./model/model.pb',  type=str, help='model path')
     parser.add_argument('--input_node', default='images_train', type=str, help='input node name')
-    parser.add_argument('--output_node', default='child/stem_conv/bn/Identity', type=str, help='output node name')
-    parser.add_argument('--loops', default=10000, type=str, help='the number of test loops')
+    parser.add_argument('--output_node', default='child/Relu', type=str, help='output node name')
+    parser.add_argument('--loops', default=1000, type=str, help='the number of test loops')
 
     args = parser.parse_args()
 

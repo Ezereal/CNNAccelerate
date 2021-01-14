@@ -30,7 +30,12 @@ public:
 
     Matrix(Matrix &matrix, int start_row, int rows, int start_col, int cols)
     {
-
+        this->shadow_ = true;
+        this->rows_ = rows;
+        this->cols_ = cols;
+        this->stride_ = matrix.stride_;
+        this->data_ = matrix.data_ + start_row * matrix.stride_ + start_col;
+        this->alloc_size_ = 0;
     }
 
     Matrix(Matrix &matrix)
@@ -45,7 +50,12 @@ public:
 
     Matrix(Matrix &matrix, int start_row, int rows)
     {
-
+        this->shadow_ = true;
+        this->rows_ = rows;
+        this->cols_ = matrix.cols_;
+        this->stride_ = matrix.stride_;
+        this->data_ = matrix.data_ + start_row * matrix.stride_;
+        this->alloc_size_ = 0;
     }
 
     Matrix(T *data, int rows, int cols, int stride)

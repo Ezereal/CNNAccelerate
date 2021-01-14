@@ -2,7 +2,8 @@ import tensorflow as tf
 
 model = '../model.pb'    #pb文件名称
 self_module = tf.load_op_library('../StemConv.so')
-model = '../model/model.pb'
+self_module = tf.load_op_library('../Cell.so')
+#model = '../model/model.pb'
 graph = tf.get_default_graph()
 graph_def = graph.as_graph_def()
 graph_def.ParseFromString(tf.gfile.FastGFile(model, 'rb').read())
