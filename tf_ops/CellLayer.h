@@ -229,6 +229,7 @@ private:
         if(is_strided)
         {
             for (int k = 0; k < col; k++)
+            {
                 for (int i = 0; i < img_height; i += stride_height)
                 {
                     for (int j = 0; j < img_width; j += stride_width)
@@ -243,6 +244,7 @@ private:
                         poolResult(x * img_width / stride_width + y, k) = val;
                     }
                 }
+            }
         }
         else
         {
@@ -328,59 +330,90 @@ private:
     void depthwise_im2col(Matrix<float> &A, Matrix<float> &B, int img_height, int img_width, \
             int kernel_height, int kernel_width, int stride_height, int stride_width)
     {
+        const int pool_height = img_height / stride_height;
+        const int pool_width = img_width / stride_width;
+
         const int kernel_size = kernel_height * kernel_width;
-        const int img_size = img_height / stride_height * img_width / stride_width;
+        const int img_size = pool_height * pool_width;
+        const int column_size = kernel_size * img_size;
 
         Matrix<float> &output = B;
-        output.Resize(A.Cols(), img_size * kernel_size);
+        output.Resize(A.Cols(), column_size);
 
         int pad_left = kernel_width / 2 - (stride_width > 1? 1 : 0);
         int pad_top = kernel_height / 2 - (stride_height > 1? 1 : 0);
         int pad_right = kernel_width / 2;
         int pad_bottom = kernel_height / 2;
+        int pad_height = img_height + pad_top + pad_bottom;
+        int pad_width = img_width + pad_left + pad_right;
 
         Matrix<float> padding;
-        int padding_row = (img_height + pad_top + pad_bottom) * (img_width + pad_left + pad_right);
-        int padding_col = A.Cols();
+        int padding_row = A.Cols();
+        int padding_col = pad_height * pad_width;
         padding.Resize(padding_row, padding_col);
-        #pragma omp parallel for
-        for(int k = 0; k < A.Cols(); k++)
+        
+        assert (pad_height == pad_width);
+        float pad_zeros[pad_height] = {0};
+
+        //#pragma omp parallel for
+        for (int k = 0; k < A.Cols(); k++)
         {
-            for(int i = 0; i < img_height + pad_top + pad_bottom; i++)
+            int offset = k * padding_col;
+            #pragma omp simd
+            for (int i = 0; i < pad_top; i++)
+            {
+                memcpy(padding.Data() + offset + i * pad_width, pad_zeros, pad_height * sizeof(float)); 
+            }
+            #pragma omp simd
+            for (int i = pad_top; i < pad_height - pad_bottom; i++)
+            {
+                padding(k, i * pad_width) = 0;
+                padding(k, i * pad_width + pad_width - 2) = 0;
+                padding(k, i * pad_width + pad_width - 1) = 0;
+            }
+            #pragma omp simd
+            for (int i = pad_height - pad_bottom; i < pad_height; i++)
+            {
+                memcpy(padding.Data() + offset + i * pad_width, pad_zeros, pad_height * sizeof(float)); 
+            }
+        }
+        for (int i = pad_top; i < pad_height - pad_bottom; i++)
+        {
+            for(int j = pad_left; j < pad_width - pad_right; j++)
             {    
+                int offset = ((i - pad_top) * img_width + j - pad_left) * A.Cols();
+                int col_index = i * pad_width + j;
                 #pragma omp simd
-                for(int j = 0; j < img_width + pad_right + pad_left; j++)
+                for (int k = 0; k < A.Cols(); k++)
                 {
-                    if(i < pad_top || i >= img_height + pad_top \
-                            || j < pad_left || j >= img_width + pad_left)
-                    {
-                        padding(i * (img_width + pad_left + pad_right) + j, k) = 0;
-                    }
-                    else
-                    {
-                        padding(i * (img_width + pad_left + pad_right) + j, k) \
-                            = pos2matrix(A, img_width, i - pad_top, j - pad_left, k);
-                    }
+                    padding(k, col_index) = *(A.Data() + offset + k);
                 }
             }
         }
 
+        assert (kernel_height == kernel_width);
         //#pragma omp parallel for
         for(int k = 0; k < A.Cols(); k++)
         {
-            for(int i = 0; i < img_height; i += stride_height)
+            for(int i = 0; i < pool_height; i++)
             {
-                for(int j = 0; j < img_width; j += stride_width)
+                #pragma omp simd
+                for(int j = 0; j < pool_width; j++)
                 {
-                    //#pragma omp simd
-                    for(int l = 0; l < kernel_size; l++)
-                    {
-                        int h = i + l / kernel_width;
-                        int w = j + l % kernel_width;
-                        *(output.Data() +  k * kernel_size * img_size + l + \
-                                (i * img_width / stride_width / stride_height + j / stride_width) * kernel_size) 
-                            = pos2matrix(padding, img_width + pad_left + pad_right, h, w, k);
-                    }
+                    int h = i * stride_height;
+                    int w = j * stride_width;
+                    int out_offset = k * column_size + (i * pool_width + j) * kernel_size;
+                    int pad_offset = k * padding_col + h * pad_width + w;
+                    memcpy(output.Data() + out_offset,      padding.Data() + pad_offset, \
+                            kernel_height * sizeof(float));
+                    memcpy(output.Data() + out_offset + 5,  padding.Data() + pad_offset + pad_width,  \
+                            kernel_height * sizeof(float));
+                    memcpy(output.Data() + out_offset + 10, padding.Data() + pad_offset + pad_width * 2, \
+                            kernel_height * sizeof(float));
+                    memcpy(output.Data() + out_offset + 15, padding.Data() + pad_offset + pad_width * 3, \
+                            kernel_height * sizeof(float));
+                    memcpy(output.Data() + out_offset + 20, padding.Data() + pad_offset + pad_width * 4, \
+                            kernel_height * sizeof(float));
                 }
             }
         }
