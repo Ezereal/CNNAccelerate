@@ -22,7 +22,7 @@ Cell module run by tensorflow consumes 2.94ms, while it consumes only 1.829ms ac
 Total model run by tensorflow consumes 3.83ms, while it consumes only 2.35ms accelerated by this project which 1.63x faster.
 
 It should be noted that this acceleration would lead 1e-3 ~ 1e-4 bias, which could improved by using 'double' datatype.
-
+And this bias only appear in middle layer result，for the result of softmax，the bias will be smaller.
 
 # Environment
 single cpu (omp_num_threads = 1, inter_op_parallelism_threads = intra_op_parallelism_threads = 1)
