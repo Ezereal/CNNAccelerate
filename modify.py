@@ -148,7 +148,7 @@ def modify_cell(graph_def):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', default='./model/model.pb',  type=str, help='model path')
+    parser.add_argument('--model_path', default='./model/accelerate.pb',  type=str, help='model path')
     parser.add_argument('--output_path', default='./modify_model.pb',  type=str, help='modify model path')
 
     args = parser.parse_args()

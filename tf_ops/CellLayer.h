@@ -148,6 +148,7 @@ public:
                 yconv_sep0_point_weight, yconv_sep0_bn_gamma, yconv_sep0_bn_beta, \
                 yconv_sep1_depth_weight, yconv_sep1_point_weight, yconv_sep1_bn_gamma, yconv_sep1_bn_beta);
         matrix_add(cellxconvResult, cellyconvResult);
+        //dumpMatrix(cellxconvResult);
 
         relu(result);
         
@@ -340,7 +341,7 @@ private:
         Matrix<float> &output = B;
         output.Resize(A.Cols(), column_size);
 
-        int pad_left = kernel_width / 2 - (stride_width > 1? 1 : 0);
+        int pad_left = kernel_width/ 2 - (stride_width > 1? 1 : 0);
         int pad_top = kernel_height / 2 - (stride_height > 1? 1 : 0);
         int pad_right = kernel_width / 2;
         int pad_bottom = kernel_height / 2;
@@ -368,6 +369,10 @@ private:
             for (int i = pad_top; i < pad_height - pad_bottom; i++)
             {
                 padding(k, i * pad_width) = 0;
+                if(stride_width <= 1)
+                {
+                    padding(k, i * pad_width + 1) = 0;
+                }
                 padding(k, i * pad_width + pad_width - 2) = 0;
                 padding(k, i * pad_width + pad_width - 1) = 0;
             }
@@ -377,6 +382,7 @@ private:
                 memcpy(padding.Data() + offset + i * pad_width, pad_zeros, pad_height * sizeof(float)); 
             }
         }
+        //memset(padding.Data(), 0, padding_row * padding_col * sizeof(float)); // slower than above 2.55ms vs 2.29ms
         for (int i = pad_top; i < pad_height - pad_bottom; i++)
         {
             for(int j = pad_left; j < pad_width - pad_right; j++)

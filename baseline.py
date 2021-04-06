@@ -6,7 +6,7 @@ from tensorflow.core.protobuf import rewriter_config_pb2
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', default='./model/model.pb',  type=str, help='model path')
+    parser.add_argument('--model_path', default='./model/accelerate.pb',  type=str, help='model path')
     parser.add_argument('--input_node', default='images_train', type=str, help='input node name')
     parser.add_argument('--output_node', default='child/fc/fc_result', type=str, help='output node name')
     parser.add_argument('--loops', default=1000, type=int, help='the number of test loops')

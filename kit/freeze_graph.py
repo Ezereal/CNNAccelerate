@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-def freeze_graph(input_checkpoint='../model/model.ckpt-1044', output_graph='../model/model.pb'):
+def freeze_graph(input_checkpoint='../system/baseline/model.ckpt-70', output_graph='../model/baseline.pb'):
     '''
     :param input_checkpoint:
     :param output_graph: PB模型保存路径

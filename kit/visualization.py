@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-model = '../model.pb'    #pb文件名称
+model = '../model/model.pb'    #pb文件名称
 self_module = tf.load_op_library('../StemConv.so')
 self_module = tf.load_op_library('../Cell.so')
 #model = '../model/model.pb'
