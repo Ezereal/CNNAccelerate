@@ -148,7 +148,6 @@ public:
                 yconv_sep0_point_weight, yconv_sep0_bn_gamma, yconv_sep0_bn_beta, \
                 yconv_sep1_depth_weight, yconv_sep1_point_weight, yconv_sep1_bn_gamma, yconv_sep1_bn_beta);
         matrix_add(cellxconvResult, cellyconvResult);
-        //dumpMatrix(cellxconvResult);
 
         relu(result);
         
@@ -187,7 +186,7 @@ private:
     Matrix<float> final_combine_bn_beta;
 
     Matrix<float> result;
-    const float sep_conv_div_value = 1 / 0.9951317;
+    const float sep_conv_div_value = 1 / 0.936455; //different trained model with different value
     
     void cell_conv(Matrix<float> &inputBuffer, Matrix<float> &outputBuffer, \
             Matrix<float> &depth0_weight, Matrix<float> &point0_weight, \
@@ -629,7 +628,7 @@ private:
 
     void dumpMatrix(Matrix<float> &m) {
         int cols = m.Cols();
-        for (int i = 0; i < std::min(20, m.Rows()); ++i) 
+        for (int i = 0; i < m.Rows(); ++i) 
         {
             if (m.Cols() < 2000000) 
             {
